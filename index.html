@@ -8,12 +8,14 @@
         /* 阿里妈妈方圆体（阿里巴巴开源免费商用字体）：页面文字统一使用，避免字体版权问题 */
         @font-face {
             font-family: 'Alimama FangYuanTi VF';
-            src: url('/tbsbw/assets/AlimamaFangYuanTiVF-Thin.woff2') format('woff2');
+            src: url('assets/AlimamaFangYuanTiVF-Thin.woff2') format('woff2');
             font-weight: 200 700;
             font-display: swap;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html {
+            /* 禁止安卓微信(X5)内核按字体设置自动放大文字；X5存在“最小字号”机制，
+               英文小字号会被强制放大到约12px导致超宽截断，故改用渲染级transform缩放兜底 */
             -webkit-text-size-adjust: none;
             text-size-adjust: none;
         }
@@ -28,6 +30,7 @@
         }
         h1 { color: #333; margin-bottom: 15px; font-size: 22px; text-align: center; }
         
+        /* 模式切换按钮组（3个按钮适配） */
         .mode-selector {
             display: flex;
             gap: 8px;
@@ -83,11 +86,13 @@
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative;
+            /* 卡片固定比例：上方图片正方形占4份 + 下方文字区占1份 → 宽:高 = 4:5 */
             aspect-ratio: 4 / 5;
         }
         .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
         .card:active { transform: scale(0.97); }
 
+        /* 图片区：正方形，高度占卡片的4份 */
         .card-img {
             flex: 0 0 auto;
             aspect-ratio: 1 / 1;
@@ -107,6 +112,7 @@
             image-rendering: crisp-edges;
         }
 
+        /* 文字区：占卡片高度的1份（约卡宽1/4），单行显示 */
         .card-text {
             flex: 1 1 0;
             min-height: 0;
@@ -119,6 +125,7 @@
             text-align: center;
             background: #fff;
         }
+        /* 文字块：包住中英两行，缩放基于它的实际渲染宽度/高度测量 */
         .card-text .block {
             width: 100%;
             display: flex;
@@ -134,6 +141,7 @@
             line-height: 1.2;
             overflow: visible;
         }
+        /* 互动模式（中文在前）：中文行高1.0、英文行高1.15，腾出高度让英文不至于太小 */
         .card-text.zh-first .fit:first-child { line-height: 1.0; }
         .card-text.zh-first .fit:last-child { line-height: 1.15; }
         .card-text .zh, .card-text .en {
@@ -152,6 +160,7 @@
             font-family: 'Alimama FangYuanTi VF', Arial, Helvetica, sans-serif;
             letter-spacing: 0;
         }
+        /* 单词/句子模式：英文在前，英文比中文稍大 */
         .card-text.en-first .en {
             font-size: 8px;
             font-weight: 700;
@@ -162,6 +171,7 @@
             color: #5d6b73;
             margin-top: 1px;
         }
+        /* 互动模式：中文在前，中文比英文稍大 */
         .card-text.zh-first .zh {
             font-size: 8px;
             font-weight: 700;
@@ -176,6 +186,7 @@
         
         footer { margin-top: 18px; font-size: 13px; color: #888; text-align: center; }
         
+        /* 激活遮罩层样式 */
         #activationOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
@@ -213,6 +224,7 @@
 
     <footer>点击图片听发音 · 切换模式听不同音频</footer>
 
+    <!-- 首次激活遮罩 -->
     <div id="activationOverlay">
         <div class="overlay-card">
             <div class="overlay-icon">👆</div>
@@ -231,10 +243,11 @@
         const overlay = document.getElementById('activationOverlay');
         const activateBtn = document.getElementById('activateBtn');
 
-        let currentMode = 'word';
+        let currentMode = 'word'; // 'word' | 'sentence' | 'interactive'
         let isActivated = false;
         const audioElements = [];
 
+        // ===== 27 条动作指令数据（附件内容） =====
         const bodyActions = [
             { zh: "点点头", en: "Nod your head" },
             { zh: "摸摸你的头发", en: "Touch your hair" },
@@ -265,6 +278,7 @@
             { zh: "数数你的脚趾头", en: "Count your toes" }
         ];
 
+        // ===== 单词模式数据（附件1：身体部位单词，英文在前） =====
         const wordVocab = [
             { en: "head", zh: "头" },
             { en: "hair", zh: "头发" },
@@ -295,6 +309,7 @@
             { en: "toes", zh: "脚趾" }
         ];
 
+        // ===== 句子模式数据（附件2：完整句子，英文在前） =====
         const sentenceData = [
             { en: "This is my head", zh: "这是我的头" },
             { en: "This is my hair", zh: "这是我的头发" },
@@ -325,16 +340,16 @@
             { en: "These are my toes", zh: "这是我的脚趾" }
         ];
 
+        // 模式对应的音频后缀：单词=无，句子=a，互动=b
         const modeSuffixMap = {
             'word': '',
             'sentence': 'a',
             'interactive': 'b'
         };
 
-        // 修改：音频路径加上 /tbsbw/ 前缀
         function getAudioSrc(index, mode) {
             const suffix = modeSuffixMap[mode];
-            return suffix ? `/tbsbw/${index}${suffix}.mp3` : `/tbsbw/${index}.mp3`;
+            return suffix ? `${index}${suffix}.mp3` : `${index}.mp3`;
         }
 
         function getModeData(mode) {
@@ -343,12 +358,20 @@
             return bodyActions;
         }
 
+        // 字号确定式计算 + 渲染级transform块级缩放兜底：
+        // 华为微信X5内核存在“最小字号”机制，小字号英文会被强制放大后超宽截断，
+        // 字号调小无效；transform是渲染级缩放，X5无法放大它。
+        // 每张卡片的英文+中文两行包在 .block 里，按实际渲染宽/高测量后整体等比缩放，
+        // 保证文字宽度永远不超过卡片（=图片）宽度，同时高度不超出文字区。
+        // 句子模式：英文尽量调大、中文调小；互动模式：中文尽量调大、英文调小但保持可读。
+        // 单词模式参数保持默认（enFactor 0.85 / zhFactor 1.05 / zhCap 12）。
         function sizeCardTexts() {
             const isSentence = currentMode === 'sentence';
             const isInteractive = currentMode === 'interactive';
-            const enFactor = isSentence ? 0.52 : (isInteractive ? 0.60 : 0.85);
-            const zhFactor = isSentence ? 1.6 : (isInteractive ? 1.0 : 1.05);
-            const zhCap = isSentence ? 6.5 : 12;
+            const enFactor = isSentence ? 0.52 : (isInteractive ? 0.60 : 0.85); // 英文平均字宽系数（越小字越大）
+            const zhFactor = isSentence ? 1.6 : (isInteractive ? 1.0 : 1.05);   // 中文平均字宽系数（越大字越小）
+            const zhCap = isSentence ? 6.5 : 12;                                 // 中文字号上限
+            // 行高权重：互动模式中文行高1.0、英文行高1.15，其余两行均1.2
             const lhZh = isInteractive ? 1.0 : 1.2;
             const lhEn = isInteractive ? 1.15 : 1.2;
 
@@ -359,10 +382,12 @@
                     const zhEl = block.querySelector('.zh');
                     if (!enEl || !zhEl) return;
 
+                    // 卡片真实渲染宽度（与正方形图片同宽），文字区可用宽/高
                     const cardW = tw.parentElement.getBoundingClientRect().width;
-                    const textW = cardW - 8;
-                    const stripH = cardW / 4 - 3;
+                    const textW = cardW - 8;      // 扣除左右内边距
+                    const stripH = cardW / 4 - 3; // 扣除上下内边距
 
+                    // 确定性起始字号（正常浏览器直接可用；X5会忽略小字号，由transform兜底）
                     let enSize = Math.min(12, (textW - 1) / Math.max(1, enEl.textContent.length * enFactor));
                     let zhSize = Math.min(zhCap, (textW - 1) / Math.max(1, zhEl.textContent.length * zhFactor));
                     const totalH = lhZh * zhSize + lhEn * enSize + 1;
@@ -376,27 +401,33 @@
                     enEl.style.fontSize = enSize + 'px';
                     zhEl.style.fontSize = zhSize + 'px';
 
+                    // 测量实际渲染宽度/高度（含X5强制放大后的值），等比缩小到容器内
                     const w = Math.max(enEl.scrollWidth, zhEl.scrollWidth);
                     const h = block.offsetHeight;
                     let s = 1;
                     if (w > textW + 1) s = Math.min(s, (textW - 2) / w);
                     if (h > stripH + 1) s = Math.min(s, (stripH - 2) / h);
                     block.style.transform = s < 1 ? 'scale(' + s.toFixed(4) + ')' : '';
-                } catch (e) { }
+                } catch (e) { /* 单卡异常不影响整体 */ }
             });
         }
         document.addEventListener('DOMContentLoaded', sizeCardTexts);
         window.addEventListener('resize', sizeCardTexts);
         window.addEventListener('load', sizeCardTexts);
+        // X5 最小字号/字体加载可能在首帧后生效，延迟再校正一次
         setTimeout(sizeCardTexts, 300);
         setTimeout(sizeCardTexts, 800);
         setTimeout(sizeCardTexts, 1500);
 
+        // ===== 音频播放与受限并发预加载 =====
+        // 微信 WebView（X5/WKWebView）在音频未就绪时，设置 currentTime 可能抛异常，
+        // 必须 try/catch 保护，否则后面的 play() 不会执行 → 点击图片无声。
         function playAudio(audio) {
-            try { audio.currentTime = 0; } catch (e) { }
+            try { audio.currentTime = 0; } catch (e) { /* 文件未就绪，忽略 */ }
             const p = audio.play();
             if (p && typeof p.catch === 'function') {
                 p.catch(() => {
+                    // 播放失败（文件未加载完 / 加载被中断）：重新触发加载后重试一次
                     retryPlay(audio);
                 });
             }
@@ -407,7 +438,7 @@
             const doRetry = () => {
                 if (retried) return;
                 retried = true;
-                try { audio.currentTime = 0; } catch (e) { }
+                try { audio.currentTime = 0; } catch (e) { /* 忽略 */ }
                 const p = audio.play();
                 if (p && typeof p.catch === 'function') {
                     p.catch(e => console.warn('Audio retry failed:', e));
@@ -416,11 +447,14 @@
             if (audio.readyState >= 1) {
                 doRetry();
             } else {
+                // 等文件就绪后自动补播；load() 会重新发起一次加载（对之前被掐断的请求有效）
                 audio.addEventListener('canplay', doRetry, { once: true });
-                try { audio.load(); } catch (e) { }
+                try { audio.load(); } catch (e) { /* 忽略 */ }
             }
         }
 
+        // 受限并发的预加载队列：同时只加载 PRELOAD_CONCURRENCY 个，逐个完成，
+        // 避免27个文件一拥而上被移动端微信掐断，也让大多数卡片点按即响。
         const PRELOAD_CONCURRENCY = 2;
         const preloadQueue = [];
         let activePreloads = 0;
@@ -461,27 +495,32 @@
                 const card = document.createElement('div');
                 card.className = 'card';
                 
+                // 图片区：只放图，不带文字
                 const imgWrap = document.createElement('div');
                 imgWrap.className = 'card-img';
                 const img = document.createElement('img');
-                // 修改：图片路径加上 /tbsbw/ 前缀
-                img.src = `/tbsbw/${i}.jpg`;
+                img.src = `${i}.jpg`;
                 img.alt = item.zh;
                 img.loading = 'eager';
+                // 异步解码：避免27张大图同步解码阻塞主线程（卡片区有固定宽高比，不会引起布局跳动）
                 img.decoding = 'async';
                 imgWrap.appendChild(img);
 
+                // 文字区：单词/句子模式英文在前（英文稍大），互动模式中文在前（中文稍大）
                 const textWrap = document.createElement('div');
                 textWrap.className = 'card-text ' + (enFirst ? 'en-first' : 'zh-first');
                 textWrap.innerHTML = enFirst
                     ? `<div class="block"><div class="fit"><div class="en">${item.en}</div></div><div class="fit"><div class="zh">${item.zh}</div></div></div>`
                     : `<div class="block"><div class="fit"><div class="zh">${item.zh}</div></div><div class="fit"><div class="en">${item.en}</div></div></div>`;
 
+                // 音频：先不批量下载（preload=none），由下方受限并发的预加载队列逐个加载，
+                // 避免微信里27个文件同时请求被中断/超时，导致点击没声音
                 const audio = document.createElement('audio');
                 audio.preload = 'none';
                 audio.src = getAudioSrc(i, currentMode);
                 audio.id = `audio-${i}`;
                 audioElements.push(audio);
+                // 加载失败时打日志（手机上看不到控制台，但便于排查问题卡片）
                 audio.addEventListener('error', () => {
                     console.warn('Audio load error:', audio.src);
                 });
@@ -501,23 +540,31 @@
                 container.appendChild(card);
             });
 
+            // 按卡片宽度与文本长度确定性计算字号，保证单行完整显示
             sizeCardTexts();
         }
 
         function setMode(mode) {
             currentMode = mode;
+            
+            // 更新按钮高亮
             wordBtn.classList.toggle('active', mode === 'word');
             sentenceBtn.classList.toggle('active', mode === 'sentence');
             interactiveBtn.classList.toggle('active', mode === 'interactive');
+
+            // 更新提示文字
             if (mode === 'word') modeHint.textContent = '当前模式：单词';
             else if (mode === 'sentence') modeHint.textContent = '当前模式：句子';
             else modeHint.textContent = '当前模式：互动';
+
+            // 重建卡片：文字内容与音频随模式切换
             generateCards();
         }
 
         function activatePage() {
             isActivated = true;
             overlay.style.display = 'none';
+            // 播放极短静音，绕过微信限制
             const silentAudio = new Audio('data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAACAgICAAIAAgACA');
             silentAudio.play().then(() => silentAudio.pause()).catch(() => {});
         }
@@ -527,6 +574,7 @@
         interactiveBtn.addEventListener('click', () => setMode('interactive'));
         activateBtn.addEventListener('click', activatePage);
 
+        // 初始化
         generateCards();
     </script>
 </body>

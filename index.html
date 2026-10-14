@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>身体部位互动卡</title>
+    <style>
+        /* 阿里妈妈方圆体（阿里巴巴开源免费商用字体）：页面文字统一使用，避免字体版权问题 */
+        @font-face {
+            font-family: 'Alimama FangYuanTi VF';
+            src: url('/tbsbw/assets/AlimamaFangYuanTiVF-Thin.woff2') format('woff2');
+            font-weight: 200 700;
+            font-display: swap;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html {
+            -webkit-text-size-adjust: none;
+            text-size-adjust: none;
+        }
+        body {
+            font-family: 'Alimama FangYuanTi VF', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f0f2f5;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        h1 { color: #333; margin-bottom: 15px; font-size: 22px; text-align: center; }
+        
+        .mode-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 360px;
+            justify-content: center;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 10px 0;
+            border: 2px solid #4CAF50;
+            background-color: white;
+            color: #4CAF50;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .mode-btn.active {
+            background-color: #4CAF50;
+            color: white;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+        .mode-btn:active { transform: scale(0.95); }
+        
+        .mode-hint {
+            font-size: 14px;
+            color: #5d6b73;
+            margin-bottom: 12px;
+            text-align: center;
+            background: #e8f5e9;
+            padding: 6px 16px;
+            border-radius: 12px;
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 420px;
+        }
+        .card {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            aspect-ratio: 4 / 5;
+        }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        .card:active { transform: scale(0.97); }
+
+        .card-img {
+            flex: 0 0 auto;
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            padding: 4px;
+        }
+        .card-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            pointer-events: none;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        .card-text {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1px 4px 2px;
+            text-align: center;
+            background: #fff;
+        }
+        .card-text .block {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center center;
+        }
+        .card-text .fit {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            line-height: 1.2;
+            overflow: visible;
+        }
+        .card-text.zh-first .fit:first-child { line-height: 1.0; }
+        .card-text.zh-first .fit:last-child { line-height: 1.15; }
+        .card-text .zh, .card-text .en {
+            display: inline-block;
+            white-space: nowrap;
+            max-width: none;
+        }
+        .card-text .zh {
+            line-height: 1.2;
+            font-family: 'Alimama FangYuanTi VF', "PingFang SC", "Microsoft YaHei", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .card-text .en {
+            line-height: 1.2;
+            font-family: 'Alimama FangYuanTi VF', Arial, Helvetica, sans-serif;
+            letter-spacing: 0;
+        }
+        .card-text.en-first .en {
+            font-size: 8px;
+            font-weight: 700;
+            color: #0e6e88;
+        }
+        .card-text.en-first .zh {
+            font-size: 8px;
+            color: #5d6b73;
+            margin-top: 1px;
+        }
+        .card-text.zh-first .zh {
+            font-size: 8px;
+            font-weight: 700;
+            color: #0e6e88;
+        }
+        .card-text.zh-first .en {
+            font-size: 8px;
+            color: #5d6b73;
+            margin-top: 1px;
+        }
+        audio { display: none; }
+        
+        footer { margin-top: 18px; font-size: 13px; color: #888; text-align: center; }
+        
+        #activationOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; z-index: 999;
+        }
+        .overlay-card {
+            background: white; padding: 30px 20px; border-radius: 16px;
+            text-align: center; max-width: 320px; width: 90%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: popIn 0.3s ease;
+        }
+        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .overlay-icon { font-size: 48px; margin-bottom: 10px; }
+        .overlay-title { font-size: 20px; font-weight: bold; margin-bottom: 10px; color: #333; }
+        .overlay-desc { font-size: 14px; color: #666; margin-bottom: 20px; line-height: 1.5; }
+        .activate-btn {
+            background: #4CAF50; color: white; border: none; padding: 12px 30px;
+            border-radius: 25px; font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>身体部位互动卡</h1>
+
+    <div class="mode-selector">
+        <button class="mode-btn active" id="wordModeBtn">单词</button>
+        <button class="mode-btn" id="sentenceModeBtn">句子</button>
+        <button class="mode-btn" id="interactiveModeBtn">互动</button>
+    </div>
+
+    <div class="mode-hint" id="modeHint">当前模式：单词</div>
+
+    <div class="card-grid" id="flashcardContainer"></div>
+
+    <footer>点击图片听发音 · 切换模式听不同音频</footer>
+
+    <div id="activationOverlay">
+        <div class="overlay-card">
+            <div class="overlay-icon">👆</div>
+            <div class="overlay-title">欢迎来到身体部位互动卡</div>
+            <div class="overlay-desc">点击下方按钮激活音频播放<br>之后点击任意卡片即可听到发音</div>
+            <button class="activate-btn" id="activateBtn">开始学习</button>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('flashcardContainer');
+        const wordBtn = document.getElementById('wordModeBtn');
+        const sentenceBtn = document.getElementById('sentenceModeBtn');
+        const interactiveBtn = document.getElementById('interactiveModeBtn');
+        const modeHint = document.getElementById('modeHint');
+        const overlay = document.getElementById('activationOverlay');
+        const activateBtn = document.getElementById('activateBtn');
+
+        let currentMode = 'word';
+        let isActivated = false;
+        const audioElements = [];
+
+        const bodyActions = [
+            { zh: "点点头", en: "Nod your head" },
+            { zh: "摸摸你的头发", en: "Touch your hair" },
+            { zh: "做个鬼脸", en: "Make a funny face" },
+            { zh: "轻拍一下额头", en: "Tap your forehead" },
+            { zh: "挑起眉毛", en: "Raise your eyebrows" },
+            { zh: "眨眨眼", en: "Blink your eyes" },
+            { zh: "指着你的鼻子", en: "Point to your nose" },
+            { zh: "揪揪耳朵", en: "Pull your ears" },
+            { zh: "张开嘴巴", en: "Open your mouth" },
+            { zh: "露出牙齿", en: "Show your teeth" },
+            { zh: "伸出舌头", en: "Stick out your tongue" },
+            { zh: "鼓起脸颊", en: "Puff up your cheeks" },
+            { zh: "指指你的下巴", en: "Point to your chin" },
+            { zh: "摸摸你的脖子", en: "Touch your neck" },
+            { zh: "耸耸肩", en: "Shrug your shoulders" },
+            { zh: "拍拍胸脯", en: "Pat your chest" },
+            { zh: "挠挠你的后背", en: "Scratch your back" },
+            { zh: "揉揉肚子", en: "Rub your tummy" },
+            { zh: "双臂交叉", en: "Cross your arms" },
+            { zh: "手肘弯曲", en: "Bend your elbow" },
+            { zh: "拍拍手", en: "Clap your hands" },
+            { zh: "动动手指", en: "Wiggle your fingers" },
+            { zh: "给我看你的指甲", en: "Show me your nail" },
+            { zh: "并拢双腿", en: "Put your legs together" },
+            { zh: "摸摸你的膝盖", en: "Touch your knees" },
+            { zh: "跺跺脚", en: "Stamp your feet" },
+            { zh: "数数你的脚趾头", en: "Count your toes" }
+        ];
+
+        const wordVocab = [
+            { en: "head", zh: "头" },
+            { en: "hair", zh: "头发" },
+            { en: "face", zh: "脸" },
+            { en: "forehead", zh: "额头" },
+            { en: "eyebrows", zh: "眉毛" },
+            { en: "eyes", zh: "眼睛" },
+            { en: "nose", zh: "鼻子" },
+            { en: "ears", zh: "耳朵" },
+            { en: "mouth", zh: "嘴巴" },
+            { en: "teeth", zh: "牙齿" },
+            { en: "tongue", zh: "舌头" },
+            { en: "cheeks", zh: "脸颊" },
+            { en: "chin", zh: "下巴" },
+            { en: "neck", zh: "脖子" },
+            { en: "shoulders", zh: "肩膀" },
+            { en: "chest", zh: "胸部" },
+            { en: "back", zh: "背部" },
+            { en: "tummy", zh: "肚子" },
+            { en: "arms", zh: "手臂" },
+            { en: "elbow", zh: "手肘" },
+            { en: "hands", zh: "手" },
+            { en: "fingers", zh: "手指" },
+            { en: "nail", zh: "指甲" },
+            { en: "legs", zh: "腿" },
+            { en: "knees", zh: "膝盖" },
+            { en: "feet", zh: "脚" },
+            { en: "toes", zh: "脚趾" }
+        ];
+
+        const sentenceData = [
+            { en: "This is my head", zh: "这是我的头" },
+            { en: "This is my hair", zh: "这是我的头发" },
+            { en: "This is my face", zh: "这是我的脸" },
+            { en: "This is my forehead", zh: "这是我的额头" },
+            { en: "These are my eyebrows", zh: "这是我的眉毛" },
+            { en: "These are my eyes", zh: "这是我的眼睛" },
+            { en: "This is my nose", zh: "这是我的鼻子" },
+            { en: "These are my ears", zh: "这是我的耳朵" },
+            { en: "This is my mouth", zh: "这是我的嘴巴" },
+            { en: "These are my teeth", zh: "这是我的牙齿" },
+            { en: "This is my tongue", zh: "这是我的舌头" },
+            { en: "These are my cheeks", zh: "这是我的脸颊" },
+            { en: "This is my chin", zh: "这是我的下巴" },
+            { en: "This is my neck", zh: "这是我的脖子" },
+            { en: "These are my shoulders", zh: "这是我的肩膀" },
+            { en: "This is my chest", zh: "这是我的胸部" },
+            { en: "This is my back", zh: "这是我的背部" },
+            { en: "This is my tummy", zh: "这是我的肚子" },
+            { en: "These are my arms", zh: "这是我的手臂" },
+            { en: "This is my elbow", zh: "这是我的手肘" },
+            { en: "These are my hands", zh: "这是我的手" },
+            { en: "These are my fingers", zh: "这是我的手指" },
+            { en: "This is my nail", zh: "这是我的指甲" },
+            { en: "These are my legs", zh: "这是我的腿" },
+            { en: "These are my knees", zh: "这是我的膝盖" },
+            { en: "These are my feet", zh: "这是我的脚" },
+            { en: "These are my toes", zh: "这是我的脚趾" }
+        ];
+
+        const modeSuffixMap = {
+            'word': '',
+            'sentence': 'a',
+            'interactive': 'b'
+        };
+
+        // 修改：音频路径加上 /tbsbw/ 前缀
+        function getAudioSrc(index, mode) {
+            const suffix = modeSuffixMap[mode];
+            return suffix ? `/tbsbw/${index}${suffix}.mp3` : `/tbsbw/${index}.mp3`;
+        }
+
+        function getModeData(mode) {
+            if (mode === 'word') return wordVocab;
+            if (mode === 'sentence') return sentenceData;
+            return bodyActions;
+        }
+
+        function sizeCardTexts() {
+            const isSentence = currentMode === 'sentence';
+            const isInteractive = currentMode === 'interactive';
+            const enFactor = isSentence ? 0.52 : (isInteractive ? 0.60 : 0.85);
+            const zhFactor = isSentence ? 1.6 : (isInteractive ? 1.0 : 1.05);
+            const zhCap = isSentence ? 6.5 : 12;
+            const lhZh = isInteractive ? 1.0 : 1.2;
+            const lhEn = isInteractive ? 1.15 : 1.2;
+
+            document.querySelectorAll('.card-text').forEach(tw => {
+                try {
+                    const block = tw.querySelector('.block');
+                    const enEl = block.querySelector('.en');
+                    const zhEl = block.querySelector('.zh');
+                    if (!enEl || !zhEl) return;
+
+                    const cardW = tw.parentElement.getBoundingClientRect().width;
+                    const textW = cardW - 8;
+                    const stripH = cardW / 4 - 3;
+
+                    let enSize = Math.min(12, (textW - 1) / Math.max(1, enEl.textContent.length * enFactor));
+                    let zhSize = Math.min(zhCap, (textW - 1) / Math.max(1, zhEl.textContent.length * zhFactor));
+                    const totalH = lhZh * zhSize + lhEn * enSize + 1;
+                    if (totalH > stripH && stripH > 4) {
+                        const k = (stripH - 1) / totalH;
+                        enSize *= k;
+                        zhSize *= k;
+                    }
+                    enSize = Math.max(3, enSize);
+                    zhSize = Math.max(3, zhSize);
+                    enEl.style.fontSize = enSize + 'px';
+                    zhEl.style.fontSize = zhSize + 'px';
+
+                    const w = Math.max(enEl.scrollWidth, zhEl.scrollWidth);
+                    const h = block.offsetHeight;
+                    let s = 1;
+                    if (w > textW + 1) s = Math.min(s, (textW - 2) / w);
+                    if (h > stripH + 1) s = Math.min(s, (stripH - 2) / h);
+                    block.style.transform = s < 1 ? 'scale(' + s.toFixed(4) + ')' : '';
+                } catch (e) { }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', sizeCardTexts);
+        window.addEventListener('resize', sizeCardTexts);
+        window.addEventListener('load', sizeCardTexts);
+        setTimeout(sizeCardTexts, 300);
+        setTimeout(sizeCardTexts, 800);
+        setTimeout(sizeCardTexts, 1500);
+
+        function playAudio(audio) {
+            try { audio.currentTime = 0; } catch (e) { }
+            const p = audio.play();
+            if (p && typeof p.catch === 'function') {
+                p.catch(() => {
+                    retryPlay(audio);
+                });
+            }
+        }
+
+        function retryPlay(audio) {
+            let retried = false;
+            const doRetry = () => {
+                if (retried) return;
+                retried = true;
+                try { audio.currentTime = 0; } catch (e) { }
+                const p = audio.play();
+                if (p && typeof p.catch === 'function') {
+                    p.catch(e => console.warn('Audio retry failed:', e));
+                }
+            };
+            if (audio.readyState >= 1) {
+                doRetry();
+            } else {
+                audio.addEventListener('canplay', doRetry, { once: true });
+                try { audio.load(); } catch (e) { }
+            }
+        }
+
+        const PRELOAD_CONCURRENCY = 2;
+        const preloadQueue = [];
+        let activePreloads = 0;
+
+        function schedulePreload(audio) {
+            preloadQueue.push(audio);
+            pumpPreloads();
+        }
+
+        function pumpPreloads() {
+            while (activePreloads < PRELOAD_CONCURRENCY && preloadQueue.length > 0) {
+                const a = preloadQueue.shift();
+                if (a.dataset.preloaded) continue;
+                a.dataset.preloaded = '1';
+                activePreloads++;
+                let done = false;
+                const finish = () => {
+                    if (done) return;
+                    done = true;
+                    activePreloads--;
+                    pumpPreloads();
+                };
+                a.addEventListener('canplay', finish, { once: true });
+                a.addEventListener('error', finish, { once: true });
+                a.load();
+            }
+        }
+
+        function generateCards() {
+            container.innerHTML = '';
+            audioElements.length = 0;
+
+            const data = getModeData(currentMode);
+            const enFirst = currentMode !== 'interactive';
+
+            data.forEach((item, idx) => {
+                const i = idx + 1;
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                const imgWrap = document.createElement('div');
+                imgWrap.className = 'card-img';
+                const img = document.createElement('img');
+                // 修改：图片路径加上 /tbsbw/ 前缀
+                img.src = `/tbsbw/${i}.jpg`;
+                img.alt = item.zh;
+                img.loading = 'eager';
+                img.decoding = 'async';
+                imgWrap.appendChild(img);
+
+                const textWrap = document.createElement('div');
+                textWrap.className = 'card-text ' + (enFirst ? 'en-first' : 'zh-first');
+                textWrap.innerHTML = enFirst
+                    ? `<div class="block"><div class="fit"><div class="en">${item.en}</div></div><div class="fit"><div class="zh">${item.zh}</div></div></div>`
+                    : `<div class="block"><div class="fit"><div class="zh">${item.zh}</div></div><div class="fit"><div class="en">${item.en}</div></div></div>`;
+
+                const audio = document.createElement('audio');
+                audio.preload = 'none';
+                audio.src = getAudioSrc(i, currentMode);
+                audio.id = `audio-${i}`;
+                audioElements.push(audio);
+                audio.addEventListener('error', () => {
+                    console.warn('Audio load error:', audio.src);
+                });
+                schedulePreload(audio);
+
+                card.addEventListener('click', () => {
+                    if (!isActivated) {
+                        overlay.style.display = 'flex';
+                        return;
+                    }
+                    playAudio(audio);
+                });
+
+                card.appendChild(imgWrap);
+                card.appendChild(textWrap);
+                card.appendChild(audio);
+                container.appendChild(card);
+            });
+
+            sizeCardTexts();
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            wordBtn.classList.toggle('active', mode === 'word');
+            sentenceBtn.classList.toggle('active', mode === 'sentence');
+            interactiveBtn.classList.toggle('active', mode === 'interactive');
+            if (mode === 'word') modeHint.textContent = '当前模式：单词';
+            else if (mode === 'sentence') modeHint.textContent = '当前模式：句子';
+            else modeHint.textContent = '当前模式：互动';
+            generateCards();
+        }
+
+        function activatePage() {
+            isActivated = true;
+            overlay.style.display = 'none';
+            const silentAudio = new Audio('data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAACAgICAAIAAgACA');
+            silentAudio.play().then(() => silentAudio.pause()).catch(() => {});
+        }
+
+        wordBtn.addEventListener('click', () => setMode('word'));
+        sentenceBtn.addEventListener('click', () => setMode('sentence'));
+        interactiveBtn.addEventListener('click', () => setMode('interactive'));
+        activateBtn.addEventListener('click', activatePage);
+
+        generateCards();
+    </script>
+</body>
+</html>

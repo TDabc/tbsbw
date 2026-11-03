@@ -27,6 +27,10 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            /* 防复制：禁止长按呼出菜单（微信/iOS 长按保存图片）与选中文字 */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
         h1 { color: #333; margin-bottom: 15px; font-size: 22px; text-align: center; }
         
@@ -568,6 +572,12 @@
             const silentAudio = new Audio('data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoAAACAgICAAIAAgACA');
             silentAudio.play().then(() => silentAudio.pause()).catch(() => {});
         }
+
+        // ===== 防复制：禁用右键菜单、长按保存、选中与拖拽 =====
+        document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+        document.addEventListener('selectstart', function (e) { e.preventDefault(); });
+        document.addEventListener('dragstart', function (e) { e.preventDefault(); });
+        document.addEventListener('copy', function (e) { e.preventDefault(); });
 
         wordBtn.addEventListener('click', () => setMode('word'));
         sentenceBtn.addEventListener('click', () => setMode('sentence'));
